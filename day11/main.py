@@ -4,7 +4,7 @@ from itertools import combinations
 with open("input.txt") as file:
     lines = file.read().splitlines()
 
-type Coordinates = tuple[int, int]  # x, y
+type Coordinates = tuple[int, int]  # y, x
 
 
 class Array2D:
@@ -76,28 +76,58 @@ def manhattan_distance(p1: Coordinates, p2: Coordinates) -> int:
     return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
 
 
-image = Array2D([list(line) for line in lines])
+def task1():
+    image = Array2D([list(line) for line in lines])
+
+    empty_rows = find_empty_rows(image)
+    for i, row in enumerate(empty_rows):
+        image.insert_row(row, ["." for _ in range(image.n_cols)])
+        for j in range(i + 1, len(empty_rows)):
+            empty_rows[j] += 1
+
+    empty_cols = find_empty_columns(image)
+    for i, col in enumerate(empty_cols):
+        image.insert_col(col, ["." for _ in range(image.n_rows)])
+        for j in range(i + 1, len(empty_cols)):
+            empty_cols[j] += 1
+
+    galaxies = find_galaxies(image)
+    galaxy_pairs = combinations(galaxies, 2)
+    distances = {pair: manhattan_distance(*pair) for pair in galaxy_pairs}
+    sum_distances = sum(distances.values())
+
+    print("Task 1:", sum_distances)
 
 
-empty_rows = find_empty_rows(image)
-for i, row in enumerate(empty_rows):
-    image.insert_row(row, ["." for _ in range(image.n_cols)])
-    for j in range(i + 1, len(empty_rows)):
-        empty_rows[j] += 1
+def task2():
+    image = Array2D([list(line) for line in lines])
+    empty_rows = find_empty_rows(image)
+    empty_cols = find_empty_columns(image)
+    galaxies = find_galaxies(image)
+    galaxy_pairs = combinations(galaxies, 2)
 
-empty_cols = find_empty_columns(image)
-for i, col in enumerate(empty_cols):
-    image.insert_col(col, ["." for _ in range(image.n_rows)])
-    for j in range(i + 1, len(empty_cols)):
-        empty_cols[j] += 1
+    def get_n_inbetweens(start: int, end: int, values: list[int]) -> int:
+        if start > end:
+            start, end = end, start
+        return sum(1 for value in values if start < value < end)
+
+    distances = {}
+    multiplier = 1000000
+    for g1, g2 in galaxy_pairs:
+        y1, x1 = g1
+        y2, x2 = g2
+
+        ic = get_n_inbetweens(x1, x2, empty_cols)
+        ir = get_n_inbetweens(y1, y2, empty_rows)
+
+        distance = (
+            manhattan_distance(g1, g2) + ic * multiplier + ir * multiplier - ic - ir
+        )
+
+        distances[(g1, g2)] = distance
+
+    print("Task 2:", sum(distances.values()))
 
 
-galaxies = find_galaxies(image)
-
-galaxy_pairs = combinations(galaxies, 2)
-
-distances = {pair: manhattan_distance(*pair) for pair in galaxy_pairs}
-
-sum_distances = sum(distances.values())
-
-print(sum_distances)
+task1()
+task2()
